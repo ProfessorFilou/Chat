@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Messenger Web</title>
-
-    <link rel="icon" type="image/png" href="Chat Logo.png">
-    <link rel="icon" type="image/jpeg" href="Chat Logo.jpg">
-    <link rel="icon" type="image/webp" href="Chat Logo.webp">
-    <link rel="apple-touch-icon" href="Chat Logo.png">
     
+    <link rel="icon" type="image/png" href="ChatLogo.PNG">
+    <link rel="apple-touch-icon" href="ChatLogo.PNG">
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -323,7 +321,7 @@
                     <span id="preview-label" style="font-size:12px; color:var(--text-sub);">Medium bereit</span>
                 </div>
                 <button class="btn-icon" onclick="cancelMediaPreview()">
-                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 17.59 13.41 12z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                 </button>
             </div>
 
@@ -472,6 +470,7 @@
         window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { alert(err.message); } };
         window.logoutUser = () => signOut(auth);
 
+        // Profilverwaltung
         window.openProfileModal = () => {
             if(!window.currentUser) return;
             document.getElementById('profile-name-input').value = window.currentUser.displayName || '';
@@ -500,6 +499,7 @@
             }
         };
 
+        // Chatverwaltung
         function loadMyChats() {
             onSnapshot(collection(db, "users", window.currentUser.uid, "joinedRooms"), (snapshot) => {
                 window.myChats = [{ id: "hauptgruppe", name: "Hauptgruppe", logo: null }];
@@ -518,4 +518,254 @@
             const list = document.getElementById('chat-list');
             list.innerHTML = '';
 
-            chats.forEach
+            chats.forEach((chat) => {
+                const item = document.createElement('div');
+                item.className = `chat-item ${window.activeChatId === chat.id ? 'active' : ''}`;
+                item.onclick = () => selectChat(chat.id, chat.name);
+                
+                let avatarHtml = `<div class="chat-avatar">${chat.name.charAt(0).toUpperCase()}</div>`;
+                if(chat.logo) {
+                    avatarHtml = `<img src="${chat.logo}" class="chat-avatar" alt="L">`;
+                }
+
+                item.innerHTML = `
+                    ${avatarHtml}
+                    <div class="chat-info">
+                        <strong>${chat.name}</strong>
+                        <span class="chat-preview">Klicken zum Öffnen</span>
+                    </div>
+                `;
+
+                item.oncontextmenu = (e) => { e.preventDefault(); showChatContextMenu(e.clientX, e.clientY, chat.id); };
+                list.appendChild(item);
+            });
+        }
+
+        window.selectChat = async (chatId, chatName) => {
+            window.activeChatId = chatId;
+            window.activeChatName = chatName;
+
+            // Room Daten abrufen
+            const roomSnap = await getDoc(doc(db, "rooms", chatId));
+            window.activeChatData = roomSnap.exists() ? roomSnap.data() : {};
+
+            document.getElementById('current-chat-title').innerText = window.activeChatName;
+            document.getElementById('app-container').classList.add('mobile-chat-active');
+            renderChatList(window.myChats);
+
+            loadMessages(chatId);
+        };
+
+        let unsubscribeMessages = null;
+        function loadMessages(chatId) {
+            if (unsubscribeMessages) unsubscribeMessages();
+
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const isMe = data.senderId === window.currentUser?.uid;
+                    const timeString = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+                    
+                    let contentHtml = `<div class="sender">${data.senderName || 'User'}</div>`;
+                    if (data.image) contentHtml += `<img src="${data.image}" class="message-img">`;
+                    if (data.audio) contentHtml += `<audio src="${data.audio}" controls></audio>`;
+                    if (data.text) contentHtml += `<div>${data.text}</div>`;
+                    contentHtml += `<div class="message-meta">${timeString}</div>`;
+
+                    msgDiv.innerHTML = contentHtml;
+                    msgDiv.oncontextmenu = (e) => { if(isMe) { e.preventDefault(); showMsgContextMenu(e.clientX, e.clientY, docSnap.id); } };
+                    container.appendChild(msgDiv);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        // Gruppeneinstellungen Modal & Funktionen
+        window.openGroupSettingsModal = () => {
+            if (window.activeChatId === "hauptgruppe") {
+                alert("Die Hauptgruppe kann nicht bearbeitet werden.");
+                return;
+            }
+
+            document.getElementById('group-name-input').value = window.activeChatName;
+            const logoPreview = document.getElementById('group-logo-preview');
+            if (window.activeChatData.logo) {
+                logoPreview.src = window.activeChatData.logo;
+            } else {
+                logoPreview.src = "";
+                logoPreview.innerText = window.activeChatName.charAt(0).toUpperCase();
+            }
+
+            // Admin Buttons anzeigen wenn Ersteller
+            const isAdmin = window.activeChatData.owner === window.currentUser.uid;
+            document.getElementById('group-admin-actions').classList.toggle('hidden', !isAdmin);
+
+            document.getElementById('group-settings-modal').classList.remove('hidden');
+        };
+
+        window.closeGroupSettingsModal = () => document.getElementById('group-settings-modal').classList.add('hidden');
+
+        window.handleGroupLogoUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.pendingGroupLogo = event.target.result;
+                    document.getElementById('group-logo-preview').src = window.pendingGroupLogo;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.saveGroupSettings = async () => {
+            const newName = document.getElementById('group-name-input').value.trim();
+            if (!newName) return;
+
+            const updateData = { name: newName };
+            if (window.pendingGroupLogo) updateData.logo = window.pendingGroupLogo;
+
+            // Globalen Raum aktualisieren
+            await updateDoc(doc(db, "rooms", window.activeChatId), updateData);
+
+            // Eigenen User-Eintrag anpassen
+            await updateDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.activeChatId), updateData);
+
+            window.activeChatName = newName;
+            closeGroupSettingsModal();
+            selectChat(window.activeChatId, newName);
+        };
+
+        window.deleteCurrentGroup = async () => {
+            if (confirm("Möchtest du diese Gruppe WIRKLICH für alle löschen?")) {
+                await deleteDoc(doc(db, "rooms", window.activeChatId));
+                await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.activeChatId));
+                closeGroupSettingsModal();
+                selectChat("hauptgruppe", "Hauptgruppe");
+            }
+        };
+
+        // Private Gruppe erstellen
+        window.createNewPrivateChat = async () => {
+            const name = document.getElementById('new-chat-name').value.trim();
+            if (!name) return;
+
+            const roomId = "group_" + Math.random().toString(36).substring(2, 10);
+            await setDoc(doc(db, "rooms", roomId), { name: name, owner: window.currentUser.uid });
+            await setDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", roomId), { name: name });
+
+            document.getElementById('new-chat-name').value = '';
+            closeCreateChatModal();
+            selectChat(roomId, name);
+        };
+
+        async function joinRoomById(roomId) {
+            const roomSnap = await getDoc(doc(db, "rooms", roomId));
+            if (roomSnap.exists()) {
+                const data = roomSnap.data();
+                await setDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", roomId), { name: data.name, logo: data.logo || null });
+                selectChat(roomId, data.name);
+            }
+        }
+
+        window.shareCurrentGroup = () => {
+            if (window.activeChatId === "hauptgruppe") return alert("Hauptgruppe ist für alle sichtbar.");
+            const shareUrl = `${window.location.origin}${window.location.pathname}?room=${window.activeChatId}`;
+            navigator.clipboard.writeText(shareUrl);
+            alert("Einladungs-Link kopiert!");
+        };
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if ((!text && !window.pendingImageData && !window.pendingAudioData) || !window.currentUser) return;
+
+            input.value = '';
+            const img = window.pendingImageData;
+            const audio = window.pendingAudioData;
+            cancelMediaPreview();
+
+            await addDoc(collection(db, "chats", window.activeChatId, "messages"), {
+                text: text || '',
+                image: img || null,
+                audio: audio || null,
+                senderId: window.currentUser.uid,
+                senderName: window.currentUser.displayName || window.currentUser.email.split('@')[0],
+                timestamp: serverTimestamp()
+            });
+        };
+
+        // Context Menus
+        function showMsgContextMenu(x, y, msgId) {
+            hideAllContextMenus();
+            window.selectedMessageId = msgId;
+            const menu = document.getElementById('msg-context-menu');
+            menu.style.left = `${Math.min(x, window.innerWidth - 170)}px`;
+            menu.style.top = `${y}px`;
+            menu.classList.remove('hidden');
+        }
+
+        function showChatContextMenu(x, y, chatId) {
+            hideAllContextMenus();
+            window.selectedChatTargetId = chatId;
+            const menu = document.getElementById('chat-context-menu');
+            menu.style.left = `${Math.min(x, window.innerWidth - 190)}px`;
+            menu.style.top = `${y}px`;
+            menu.classList.remove('hidden');
+        }
+
+        window.hideAllContextMenus = () => {
+            document.getElementById('msg-context-menu').classList.add('hidden');
+            document.getElementById('chat-context-menu').classList.add('hidden');
+        };
+
+        window.deleteSelectedMessage = async () => {
+            if (window.selectedMessageId) await deleteDoc(doc(db, "chats", window.activeChatId, "messages", window.selectedMessageId));
+            hideAllContextMenus();
+        };
+
+        window.deleteSelectedChat = async () => {
+            if (window.selectedChatTargetId === "hauptgruppe") return alert("Hauptgruppe kann nicht gelöscht werden.");
+            await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.selectedChatTargetId));
+            selectChat("hauptgruppe", "Hauptgruppe");
+            hideAllContextMenus();
+        };
+
+        // Medien
+        window.triggerFileUpload = () => document.getElementById('file-upload').click();
+        window.handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.pendingImageData = event.target.result;
+                    document.getElementById('preview-img').src = window.pendingImageData;
+                    document.getElementById('preview-img').classList.remove('hidden');
+                    document.getElementById('media-preview-container').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.cancelMediaPreview = () => {
+            window.pendingImageData = null;
+            window.pendingAudioData = null;
+            document.getElementById('media-preview-container').classList.add('hidden');
+        };
+
+        window.closeMobileChat = () => document.getElementById('app-container').classList.remove('mobile-chat-active');
+        window.openCreateChatModal = () => document.getElementById('create-modal').classList.remove('hidden');
+        window.closeCreateChatModal = () => document.getElementById('create-modal').classList.add('hidden');
+        window.filterChats = () => {
+            const queryVal = document.getElementById('search-input').value.toLowerCase();
+            renderChatList(window.myChats.filter(chat => chat.name.toLowerCase().includes(queryVal)));
+        };
+    </script>
+</body>
+</html>
