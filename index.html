@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProfessorFilu - Schultechnik App</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e1e2f">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background: #0f111a;
+      color: #e1e1e6;
+    }
+
+    /* Sidebar für Chats & Gruppen */
+    #sidebar {
+      width: 320px;
+      background: #181b29;
+      border-right: 1px solid #282d42;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #1e2238;
+      color: #4da6ff;
+      padding: 20px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-bottom: 1px solid #282d42;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .chat-item {
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      border-radius: 12px;
+      background: #202436;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .chat-item:hover, .chat-item.active {
+      background: #2a2f47;
+      border-color: #4da6ff;
+      transform: translateY(-2px);
+    }
+
+    .chat-item strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .chat-item small {
+      color: #a0a5c0;
+      font-size: 0.8rem;
+    }
+
+    /* Hauptfenster / Chatbereich */
+    #main-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0f111a;
+    }
+
+    #chat-header {
+      background: #181b29;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #282d42;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    #messages-container {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Nachrichten-Bubbles im BankingGame-Style */
+    .message {
+      max-width: 65%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .message.received {
+      background: #202436;
+      border-top-left-radius: 4px;
+      align-self: flex-start;
+      border: 1px solid #282d42;
+    }
+
+    .message.sent {
+      background: linear-gradient(135deg, #0066ff, #0052cc);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+      align-self: flex-end;
+    }
+
+    .message .sender {
+      font-size: 0.75rem;
+      color: #a0a5c0;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .message.sent .sender {
+      color: #b3d1ff;
+    }
+
+    /* Eingabebereich */
+    #input-area {
+      padding: 16px;
+      background: #181b29;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      border-top: 1px solid #282d42;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 14px 18px;
+      background: #0f111a;
+      border: 1px solid #282d42;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #message-input:focus {
+      border-color: #4da6ff;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      background: #0066ff;
+      color: white;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #0052cc;
+      transform: translateY(-1px);
+    }
+
+    button.icon-btn {
+      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      background: #202436;
+      border: 1px solid #282d42;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+    }
+
+    button.icon-btn:hover {
+      background: #2a2f47;
+      border-color: #4da6ff;
+    }
+
+    /* Login Overlay im Game-Style */
+    #login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 17, 26, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .login-box {
+      background: #181b29;
+      border: 1px solid #282d42;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 360px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .login-box h2 {
+      color: #fff;
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .login-box input {
+      padding: 14px;
+      background: #0f111a;
+      border: 1px solid #282d42;
+      border-radius: 10px;
+      color: white;
+      outline: none;
+    }
+
+    .login-box input:focus {
+      border-color: #4da6ff;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="login-overlay">
+    <div class="login-box">
+      <h2>🎮 Schultechnik App</h2>
+      <input type="email" id="login-email" placeholder="E-Mail Adresse">
+      <input type="password" id="login-password" placeholder="Passwort">
+      <button onclick="login()">Anmelden</button>
+      <button onclick="register()" style="background: transparent; border: 1px solid #282d42; color: #a0a5c0;">Registrieren</button>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="header">
+      ⚡ Schultechnik Chat
+    </div>
+    <div id="chat-list">
+      <div class="chat-item active" onclick="selectChat('group_schultechnik')">
+        <strong>⚙️ Schultechnik Team</strong>
+        <small>Öffentliche Gruppe</small>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-chat">
+    <div id="chat-header">
+      <span id="current-chat-title">⚙️ Schultechnik Team</span>
+      <div style="display: flex; gap: 10px;">
+        <button class="icon-btn" onclick="startVoiceCall()" title="Voice Chat starten">📞</button>
+      </div>
+    </div>
+
+    <div id="messages-container">
+      <div class="message received">
+        <div class="sender">System</div>
+        Willkommen in der Schultechnik App!
+      </div>
+    </div>
+
+    <div id="input-area">
+      <button class="icon-btn" id="mic-btn" onclick="toggleVoiceRecording()" title="Sprachnachricht aufnehmen">🎙️</button>
+      <input type="text" id="message-input" placeholder="Nachricht eingeben..." onkeydown="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()">Senden</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+    // Deine Firebase Konfiguration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeaGQDvvcVSr5MsGId2KYOsi2KBPQTnl8",
+      authDomain: "chat-dd3aa.firebaseapp.com",
+      databaseURL: "https://chat-dd3aa-default-rtdb.firebaseio.com",
+      projectId: "chat-dd3aa",
+      storageBucket: "chat-dd3aa.firebasestorage.app",
+      messagingSenderId: "460395397696",
+      appId: "1:460395397696:web:06092d1192b93c6a5e15a5"
+    };
+
+    // Firebase App Initialisierung
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    window.currentUser = null;
+    window.activeChatId = "group_schultechnik";
+
+    // Auth Status beobachten
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.currentUser = user;
+        document.getElementById('login-overlay').style.display = 'none';
+        loadMessages(window.activeChatId);
+      } else {
+        document.getElementById('login-overlay').style.display = 'flex';
+      }
+    });
+
+    // Anmelden
+    window.login = async () => {
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (err) { alert("Login-Fehler: " + err.message); }
+    };
+
+    // Registrieren
+    window.register = async () => {
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      try {
+        await createUserWithEmailAndPassword(auth, email, pass);
+      } catch (err) { alert("Registrierung: " + err.message); }
+    };
+
+    // Nachricht senden
+    window.sendMessage = async () => {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text || !window.currentUser) return;
+
+      input.value = '';
+      await addDoc(collection(db, "chats", window.activeChatId, "messages"), {
+        text: text,
+        senderId: window.currentUser.uid,
+        senderEmail: window.currentUser.email,
+        timestamp: serverTimestamp(),
+        type: "text"
+      });
+    };
+
+    // Nachrichten in Echtzeit laden
+    let unsubscribeMessages = null;
+    window.loadMessages = (chatId) => {
+      if (unsubscribeMessages) unsubscribeMessages();
+
+      const q = query(
+        collection(db, "chats", chatId, "messages"),
+        orderBy("timestamp", "asc")
+      );
+
+      unsubscribeMessages = onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('messages-container');
+        container.innerHTML = '';
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const isMe = data.senderId === window.currentUser?.uid;
+          
+          const msgDiv = document.createElement('div');
+          msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+          
+          let content = `<div>${data.text}</div>`;
+          if (data.type === 'audio') {
+            content = `<audio controls src="${data.audioUrl}"></audio>`;
+          }
+
+          msgDiv.innerHTML = `
+            <div class="sender">${data.senderEmail ? data.senderEmail.split('@')[0] : 'User'}</div>
+            ${content}
+          `;
+          container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+    };
+
+    // Chat wechseln
+    window.selectChat = (chatId) => {
+      window.activeChatId = chatId;
+      document.getElementById('current-chat-title').innerText = chatId;
+      window.loadMessages(chatId);
+    };
+
+    // Voice Chat Dummy
+    window.startVoiceCall = () => {
+      alert("Voice Call Signal wird gesendet...");
+    };
+
+    // Sprachnachrichten Button Toggle
+    let isRecording = false;
+    window.toggleVoiceRecording = () => {
+      isRecording = !isRecording;
+      const micBtn = document.getElementById('mic-btn');
+      micBtn.style.background = isRecording ? '#ff4d4d' : '#202436';
+    };
+  </script>
+</body>
+</html>
