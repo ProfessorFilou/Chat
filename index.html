@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chat</title>
+    <title>Chat App</title>
     
     <link rel="icon" type="image/png" href="ChatLogo.PNG">
     <link rel="apple-touch-icon" href="ChatLogo.PNG">
-
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,7 +49,6 @@
 
         body { display: flex; flex-direction: column; }
 
-        /* Toast Notification */
         #toast-container {
             position: fixed;
             top: 20px;
@@ -121,6 +119,7 @@
             font-weight: 700;
             font-size: 14px;
             border: 1px solid var(--border);
+            overflow: hidden;
         }
         .status-dot-badge {
             width: 10px;
@@ -185,8 +184,15 @@
             flex-shrink: 0;
         }
 
-        .panel-header-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .panel-header-left { display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
         .panel-header h3 { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .typing-subtext {
+            font-size: 11px;
+            color: var(--brand);
+            font-weight: 600;
+            animation: pulse 1.5s infinite;
+        }
 
         .search-box { padding: 8px 12px; border-bottom: 1px solid var(--border); background: #ffffff; flex-shrink: 0; }
 
@@ -210,7 +216,7 @@
         .chat-avatar {
             width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; color: var(--brand);
             display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
-            flex-shrink: 0; object-fit: cover; border: 1px solid var(--border);
+            flex-shrink: 0; object-fit: cover; border: 1px solid var(--border); overflow: hidden;
         }
 
         .chat-info { flex: 1; overflow: hidden; }
@@ -230,7 +236,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Message Layout mit Profilbild */
         .message {
             max-width: 75%;
             padding: 10px 14px;
@@ -262,6 +267,7 @@
             font-weight: 700;
             flex-shrink: 0;
             border: 1px solid var(--border);
+            overflow: hidden;
         }
 
         .message.sent .message-avatar {
@@ -270,11 +276,7 @@
             border: 1px solid rgba(255,255,255,0.3);
         }
 
-        .message-body {
-            flex: 1;
-            min-width: 0;
-        }
-
+        .message-body { flex: 1; min-width: 0; }
         .message .sender { font-size: 11px; font-weight: 700; margin-bottom: 2px; color: var(--text-sub); }
         .message.sent .sender { color: rgba(255, 255, 255, 0.85); }
 
@@ -292,19 +294,8 @@
         .message-img { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 6px; display: block; object-fit: cover; }
         .message audio { margin-top: 6px; max-width: 100%; border-radius: 20px; }
 
-        .message-reactions {
-            display: flex;
-            gap: 4px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-        }
-        .reaction-badge {
-            background: rgba(255,255,255,0.2);
-            border-radius: 12px;
-            padding: 2px 6px;
-            font-size: 11px;
-            backdrop-filter: blur(4px);
-        }
+        .message-reactions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .reaction-badge { background: rgba(255,255,255,0.2); border-radius: 12px; padding: 2px 6px; font-size: 11px; backdrop-filter: blur(4px); }
         .message.received .reaction-badge { background: #f1f5f9; }
 
         .message-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; margin-top: 4px; opacity: 0.75; }
@@ -349,14 +340,12 @@
         .btn-send svg { fill: white; margin-left: 2px; }
 
         #back-btn { display: none; }
-
         #input-area { padding: 10px 12px; background: var(--bg-surface); border-top: 1px solid var(--border); display: flex; gap: 6px; align-items: center; flex-shrink: 0; width: 100%; }
 
         .context-menu { position: fixed; background: #ffffff; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: var(--radius-md); padding: 6px; z-index: 500; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
         .context-menu button { background: transparent; border: none; padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--text-main); text-align: left; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
         .context-menu button:hover { background: #f1f5f9; }
         .context-menu button.danger { color: var(--rose); }
-        .context-menu button.danger:hover { background: #fff1f2; }
 
         .reaction-bar { display: flex; gap: 6px; padding: 4px 6px; border-bottom: 1px solid var(--border); justify-content: space-between; }
         .reaction-bar span { cursor: pointer; font-size: 18px; transition: transform 0.1s; }
@@ -393,7 +382,7 @@
                 <div id="user-header-avatar" class="header-avatar">U</div>
                 <div class="status-dot-badge"></div>
             </div>
-            <span id="user-header-name" class="header-username">Benutzer</span>
+            <span id="user-header-name" class="header-username">Laden...</span>
         </div>
     </div>
 
@@ -416,11 +405,14 @@
 
         <div id="main-chat" class="glass-panel" onclick="hideAllContextMenus()">
             <div class="panel-header">
-                <div class="panel-header-left">
+                <div style="display:flex; align-items:center; gap:8px;">
                     <button class="btn-icon" id="back-btn" onclick="closeMobileChat()" title="Zurück">
                         <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
                     </button>
-                    <h3 id="current-chat-title">Hauptgruppe</h3>
+                    <div class="panel-header-left">
+                        <h3 id="current-chat-title">Hauptgruppe</h3>
+                        <span id="typing-indicator" class="typing-subtext hidden">jemand schreibt...</span>
+                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 2px;">
@@ -464,7 +456,7 @@
                     <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
                 </button>
 
-                <input type="text" id="message-input" placeholder="Nachricht schreiben... (**fett**, *kursiv*)" onkeydown="if(event.key==='Enter') sendMessage()">
+                <input type="text" id="message-input" placeholder="Nachricht schreiben..." oninput="handleTypingInput()" onkeydown="if(event.key==='Enter') sendMessage()">
                 
                 <button class="btn-icon btn-send" onclick="sendMessage()" title="Senden">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -512,7 +504,7 @@
 
             <input type="text" id="profile-name-input" placeholder="Dein Name">
             
-            <button class="btn btn-primary" onclick="saveUserProfile()" style="width: 100%;">Speichern</button>
+            <button class="btn btn-primary" id="btn-save-profile" onclick="saveUserProfile()" style="width: 100%;">Speichern</button>
             <button class="btn btn-secondary" onclick="logoutUser()" style="width: 100%;">Abmelden</button>
             
             <div class="divider">GEFAHRENZONE</div>
@@ -526,7 +518,6 @@
             <h3 style="font-size: 16px;">Gruppeneinstellungen</h3>
             
             <img id="group-logo-preview" class="avatar-preview-box" src="" alt="G">
-            
             <button class="btn btn-secondary" onclick="document.getElementById('group-logo-upload').click()" style="width:100%;">Logo hochladen</button>
             <input type="file" id="group-logo-upload" class="hidden" accept="image/*" onchange="handleGroupLogoUpload(event)">
 
@@ -604,6 +595,43 @@
         let audioChunks = [];
         let isRecording = false;
 
+        let typingTimeout = null;
+        let isInitialLoad = true;
+
+        // Sound-Effekt per Web Audio API erzeugen
+        function playNotificationSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+                
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.25);
+            } catch(e){}
+        }
+
+        // Browser Push Benachrichtigung anfordern
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        function triggerNotification(title, body) {
+            playNotificationSound();
+            if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+                new Notification(title, { body: body, icon: 'ChatLogo.PNG' });
+            }
+        }
+
         window.showToast = (msg) => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -674,12 +702,19 @@
             }
         }
 
-        window.loginWithGoogle = async () => { try { await signInWithPopup(auth, googleProvider); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
-        window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
-        window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
+        // Login & Google Auth mit Fehler-Handling
+        window.loginWithGoogle = async () => { 
+            try { 
+                await signInWithPopup(auth, googleProvider); 
+            } catch (err) { 
+                showAppDialog({ title: "Google Fehler", message: err.message }); 
+            } 
+        };
+        window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Anmeldefehler", message: err.message }); } };
+        window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Registrierungsfehler", message: err.message }); } };
         window.logoutUser = () => signOut(auth);
 
-        // Profilverwaltung
+        // Profilverwaltung & Komprimierung des Avatar-Bildes auf max. 80x80 (für kleine Base64 Daten)
         window.openProfileModal = () => {
             if(!window.currentUser) return;
             const name = window.currentUser.displayName || '';
@@ -701,26 +736,54 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    window.pendingUserAvatar = event.target.result;
-                    document.getElementById('profile-avatar-preview').innerHTML = `<img src="${window.pendingUserAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 80;
+                        canvas.height = 80;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, 80, 80);
+                        
+                        window.pendingUserAvatar = canvas.toDataURL('image/jpeg', 0.8);
+                        document.getElementById('profile-avatar-preview').innerHTML = `<img src="${window.pendingUserAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                    };
+                    img.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             }
         };
 
         window.saveUserProfile = async () => {
-            const newName = document.getElementById('profile-name-input').value.trim();
-            if(!newName) return;
-            
-            const profileData = { displayName: newName };
-            if(window.pendingUserAvatar) {
-                profileData.photoURL = window.pendingUserAvatar;
-            }
+            const btn = document.getElementById('btn-save-profile');
+            btn.innerText = "Speichert...";
+            btn.disabled = true;
 
-            await updateProfile(window.currentUser, profileData);
-            updateHeaderProfileUI();
-            closeProfileModal();
-            showToast("Profil aktualisiert!");
+            try {
+                const newName = document.getElementById('profile-name-input').value.trim();
+                if(!newName) return;
+                
+                const profileData = { displayName: newName };
+                if(window.pendingUserAvatar) {
+                    profileData.photoURL = window.pendingUserAvatar;
+                }
+
+                await updateProfile(window.currentUser, profileData);
+                
+                // Zusätzliches Speichern im Users Firestore Document
+                await setDoc(doc(db, "users", window.currentUser.uid), {
+                    displayName: newName,
+                    photoURL: window.pendingUserAvatar || window.currentUser.photoURL || null
+                }, { merge: true });
+
+                updateHeaderProfileUI();
+                closeProfileModal();
+                showToast("Profil erfolgreich aktualisiert!");
+            } catch(err) {
+                showAppDialog({ title: "Fehler beim Speichern", message: err.message });
+            } finally {
+                btn.innerText = "Speichern";
+                btn.disabled = false;
+            }
         };
 
         window.deleteUserProfile = () => {
@@ -740,6 +803,41 @@
                 }
             });
         };
+
+        // Typ-Indikator Steuerung
+        window.handleTypingInput = () => {
+            if(!window.activeChatId || !window.currentUser) return;
+            const typingDocRef = doc(db, "chats", window.activeChatId, "typing", window.currentUser.uid);
+
+            setDoc(typingDocRef, {
+                userName: window.currentUser.displayName || "Jemand",
+                timestamp: serverTimestamp()
+            });
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                deleteDoc(typingDocRef);
+            }, 3000);
+        };
+
+        function listenToTyping(chatId) {
+            onSnapshot(collection(db, "chats", chatId, "typing"), (snapshot) => {
+                const typers = [];
+                snapshot.forEach(d => {
+                    if (d.id !== window.currentUser?.uid) {
+                        typers.push(d.data().userName);
+                    }
+                });
+                
+                const indicator = document.getElementById('typing-indicator');
+                if (typers.length > 0) {
+                    indicator.innerText = `${typers.join(', ')} schreibt...`;
+                    indicator.classList.remove('hidden');
+                } else {
+                    indicator.classList.add('hidden');
+                }
+            });
+        }
 
         // Chatverwaltung
         function loadMyChats() {
@@ -794,7 +892,9 @@
             document.getElementById('app-container').classList.add('mobile-chat-active');
             renderChatList(window.myChats);
 
+            isInitialLoad = true;
             loadMessages(chatId);
+            listenToTyping(chatId);
         };
 
         function parseMarkdown(text) {
@@ -814,6 +914,17 @@
                 const container = document.getElementById('messages-container');
                 container.innerHTML = '';
 
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && !isInitialLoad) {
+                        const newMsg = change.doc.data();
+                        if (newMsg.senderId !== window.currentUser?.uid) {
+                            triggerNotification(`Neue Nachricht von ${newMsg.senderName}`, newMsg.text || 'Medien-Anhang');
+                        }
+                    }
+                });
+
+                isInitialLoad = false;
+
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const isMe = data.senderId === window.currentUser?.uid;
@@ -822,7 +933,6 @@
                     const msgDiv = document.createElement('div');
                     msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
                     
-                    // Rundes Profilbild für Absender oben links in der Nachricht
                     let avatarHtml = `<div class="message-avatar">${(data.senderName || 'U').charAt(0).toUpperCase()}</div>`;
                     if (data.senderAvatar) {
                         avatarHtml = `<img src="${data.senderAvatar}" class="message-avatar" alt="A">`;
@@ -997,6 +1107,11 @@
         window.sendMessage = async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
+
+            // Typing Indicator entfernen beim Senden
+            if (window.currentUser) {
+                deleteDoc(doc(db, "chats", window.activeChatId, "typing", window.currentUser.uid));
+            }
 
             if (window.editingMessageId) {
                 if (text) {
