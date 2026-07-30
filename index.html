@@ -1,466 +1,487 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ProfessorFilu - Web App</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e1e2f">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+    <style>
+        :root {
+            --bg-app: #f4f7fa;
+            --bg-surface: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --brand: #4f46e5;
+            --brand-light: #eeebff;
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --amber: #f59e0b;
+            --border: #e6ebf1;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.02);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-pill: 99px;
+        }
 
-    body {
-      display: flex;
-      height: 100vh;
-      background: #0f111a;
-      color: #e1e1e6;
-    }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
 
-    /* Sidebar für Chats & Gruppen */
-    #sidebar {
-      width: 320px;
-      background: #181b29;
-      border-right: 1px solid #282d42;
-      display: flex;
-      flex-direction: column;
-    }
+        body {
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    .header {
-      background: #1e2238;
-      color: #4da6ff;
-      padding: 20px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      border-bottom: 1px solid #282d42;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+        /* App Header */
+        .app-header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
 
-    #chat-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
+        .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .logo-dot { width: 10px; height: 10px; background: var(--brand); border-radius: 50%; }
 
-    .chat-item {
-      padding: 14px 16px;
-      margin-bottom: 8px;
-      border-radius: 12px;
-      background: #202436;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: 1px solid transparent;
-    }
+        .session-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            background: #f1f5f9;
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+        }
 
-    .chat-item:hover, .chat-item.active {
-      background: #2a2f47;
-      border-color: #4da6ff;
-      transform: translateY(-2px);
-    }
+        /* App Main Wrapper Layout */
+        .app-container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            margin: 24px auto;
+            padding: 0 24px;
+            gap: 24px;
+            height: calc(100vh - 120px);
+        }
 
-    .chat-item strong {
-      color: #ffffff;
-      display: block;
-      margin-bottom: 4px;
-    }
+        /* Sidebar & Main Glass Panels */
+        .glass-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    .chat-item small {
-      color: #a0a5c0;
-      font-size: 0.8rem;
-    }
+        #sidebar {
+            width: 320px;
+            flex-shrink: 0;
+        }
 
-    /* Hauptfenster / Chatbereich */
-    #main-chat {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #0f111a;
-    }
+        #main-chat {
+            flex: 1;
+        }
 
-    #chat-header {
-      background: #181b29;
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #282d42;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
+        .panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    #messages-container {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
 
-    /* Nachrichten-Bubbles */
-    .message {
-      max-width: 65%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      line-height: 1.4;
-      word-wrap: break-word;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
+        /* Chat-Liste */
+        #chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
 
-    .message.received {
-      background: #202436;
-      border-top-left-radius: 4px;
-      align-self: flex-start;
-      border: 1px solid #282d42;
-    }
+        .chat-item {
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
-    .message.sent {
-      background: linear-gradient(135deg, #0066ff, #0052cc);
-      color: #ffffff;
-      border-top-right-radius: 4px;
-      align-self: flex-end;
-    }
+        .chat-item:hover, .chat-item.active {
+            background: var(--brand-light);
+            border-color: var(--brand);
+            transform: translateY(-1px);
+        }
 
-    .message .sender {
-      font-size: 0.75rem;
-      color: #a0a5c0;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
+        .chat-item strong {
+            display: block;
+            font-size: 14px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
 
-    .message.sent .sender {
-      color: #b3d1ff;
-    }
+        .chat-item small {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
 
-    /* Eingabebereich */
-    #input-area {
-      padding: 16px;
-      background: #181b29;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      border-top: 1px solid #282d42;
-    }
+        /* Nachrichtenbereich */
+        #messages-container {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fbfcfd;
+        }
 
-    #message-input {
-      flex: 1;
-      padding: 14px 18px;
-      background: #0f111a;
-      border: 1px solid #282d42;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+        .message {
+            max-width: 65%;
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
 
-    #message-input:focus {
-      border-color: #4da6ff;
-    }
+        .message.received {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
 
-    button {
-      padding: 12px 20px;
-      border: none;
-      background: #0066ff;
-      color: white;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-    }
+        .message.sent {
+            background: var(--brand);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
 
-    button:hover {
-      background: #0052cc;
-      transform: translateY(-1px);
-    }
+        .message .sender {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-sub);
+        }
 
-    button.google-btn {
-      background: #ffffff;
-      color: #333333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
+        .message.sent .sender {
+            color: rgba(255, 255, 255, 0.8);
+        }
 
-    button.google-btn:hover {
-      background: #e6e6e6;
-    }
+        /* Formularelemente & Buttons */
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-main);
+            background: #fdfefe;
+            transition: all 0.2s ease;
+        }
 
-    button.icon-btn {
-      border-radius: 12px;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      background: #202436;
-      border: 1px solid #282d42;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.2rem;
-    }
+        input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 4px var(--brand-light);
+            outline: none;
+        }
 
-    button.icon-btn:hover {
-      background: #2a2f47;
-      border-color: #4da6ff;
-    }
+        .btn {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: var(--radius-pill);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
 
-    /* Login Overlay */
-    #login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(15, 17, 26, 0.95);
-      backdrop-filter: blur(8px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+        .btn-secondary { background: transparent; border-color: var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background: #f8fafc; border-color: var(--text-sub); }
+        
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: var(--radius-pill);
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 16px;
+        }
 
-    .login-box {
-      background: #181b29;
-      border: 1px solid #282d42;
-      padding: 40px;
-      border-radius: 20px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      width: 360px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
+        .btn-icon:hover {
+            background: var(--brand-light);
+            border-color: var(--brand);
+            color: var(--brand);
+        }
 
-    .login-box h2 {
-      color: #fff;
-      font-size: 1.5rem;
-      margin-bottom: 5px;
-    }
+        /* Eingabebereich */
+        #input-area {
+            padding: 18px 24px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
 
-    .login-box input {
-      padding: 14px;
-      background: #0f111a;
-      border: 1px solid #282d42;
-      border-radius: 10px;
-      color: white;
-      outline: none;
-    }
+        /* Modal Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
 
-    .login-box input:focus {
-      border-color: #4da6ff;
-    }
+        .login-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            width: 380px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            text-align: center;
+        }
 
-    .divider {
-      color: #a0a5c0;
-      font-size: 0.8rem;
-      margin: 5px 0;
-    }
-  </style>
+        .login-box h2 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .divider {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin: 4px 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            .app-container {
+                flex-direction: column;
+                height: auto;
+                margin: 12px auto;
+            }
+            #sidebar { width: 100%; height: 200px; }
+            #main-chat { height: 500px; }
+        }
+    </style>
 </head>
 <body>
 
-  <div id="login-overlay">
-    <div class="login-box">
-      <h2>💬 Willkommen Chat</h2>
-      <p style="color: #a0a5c0; font-size: 0.85rem;">Melde dich an, um mit deinen Gruppen zu schreiben.</p>
-      
-      <button onclick="loginWithGoogle()" class="google-btn">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.41-1.57-5.13-3.72L.97 13.01C2.47 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.87 10.8c-.18-.53-.28-1.1-.28-1.8s.1-1.27.28-1.8L.97 4.99C.35 6.22 0 7.57 0 9s.35 2.78.97 4.01l2.9-2.21z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.47 2.02.97 4.99l2.9 2.21C4.59 5.05 6.62 3.58 9 3.58z"/></svg>
-        Mit Google anmelden
-      </button>
-
-      <div class="divider">ODER MIT E-MAIL</div>
-
-      <input type="email" id="login-email" placeholder="E-Mail Adresse">
-      <input type="password" id="login-password" placeholder="Passwort">
-      <button onclick="login()">Anmelden</button>
-      <button onclick="register()" style="background: transparent; border: 1px solid #282d42; color: #a0a5c0;">Registrieren</button>
-    </div>
-  </div>
-
-  <div id="sidebar">
-    <div class="header">
-      💬 Messages
-    </div>
-    <div id="chat-list">
-      <div class="chat-item active" onclick="selectChat('hauptgruppe')">
-        <strong>🌐 Hauptgruppe</strong>
-        <small>Offener Chatraum</small>
-      </div>
-    </div>
-  </div>
-
-  <div id="main-chat">
-    <div id="chat-header">
-      <span id="current-chat-title">🌐 Hauptgruppe</span>
-      <div style="display: flex; gap: 10px;">
-        <button class="icon-btn" onclick="startVoiceCall()" title="Voice Chat starten">📞</button>
-      </div>
+    <div class="app-header">
+        <div class="logo"><div class="logo-dot"></div> Web Chat</div>
+        <div id="user-badge" class="session-badge">Nicht angemeldet</div>
     </div>
 
-    <div id="messages-container">
-      <div class="message received">
-        <div class="sender">System</div>
-        Willkommen in der App!
-      </div>
+    <div class="app-container">
+
+        <div id="sidebar" class="glass-panel">
+            <div class="panel-header">
+                <h3>💬 Räume</h3>
+            </div>
+            <div id="chat-list">
+                <div class="chat-item active" onclick="selectChat('hauptgruppe')">
+                    <strong>🌐 Hauptgruppe</strong>
+                    <small>Offener Chatraum</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-chat" class="glass-panel">
+            <div class="panel-header">
+                <h3 id="current-chat-title">🌐 Hauptgruppe</h3>
+                <button class="btn btn-icon" onclick="startVoiceCall()" title="Anrufen">📞</button>
+            </div>
+
+            <div id="messages-container">
+                <div class="message received">
+                    <div class="sender">System</div>
+                    Willkommen im Chat!
+                </div>
+            </div>
+
+            <div id="input-area">
+                <button class="btn btn-icon" id="mic-btn" onclick="toggleVoiceRecording()" title="Sprachnachricht">🎙️</button>
+                <input type="text" id="message-input" placeholder="Schreibe eine Nachricht..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <button class="btn btn-primary" onclick="sendMessage()">Senden</button>
+            </div>
+        </div>
+
     </div>
 
-    <div id="input-area">
-      <button class="icon-btn" id="mic-btn" onclick="toggleVoiceRecording()" title="Sprachnachricht aufnehmen">🎙️</button>
-      <input type="text" id="message-input" placeholder="Nachricht eingeben..." onkeydown="if(event.key==='Enter') sendMessage()">
-      <button onclick="sendMessage()">Senden</button>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Willkommen</h2>
+            <p style="font-size:13px; color:var(--text-sub); margin-bottom: 6px;">Melde dich an, um mitzuchatten.</p>
+
+            <button class="btn btn-secondary" onclick="loginWithGoogle()" style="width:100%;">
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.41-1.57-5.13-3.72L.97 13.01C2.47 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.87 10.8c-.18-.53-.28-1.1-.28-1.8s.1-1.27.28-1.8L.97 4.99C.35 6.22 0 7.57 0 9s.35 2.78.97 4.01l2.9-2.21z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.47 2.02.97 4.99l2.9 2.21C4.59 5.05 6.62 3.58 9 3.58z"/></svg>
+                Mit Google anmelden
+            </button>
+
+            <div class="divider">ODER MIT E-MAIL</div>
+
+            <input type="email" id="login-email" placeholder="E-Mail Adresse">
+            <input type="password" id="login-password" placeholder="Passwort">
+            
+            <button class="btn btn-primary" onclick="login()" style="width:100%;">Anmelden</button>
+            <button class="btn btn-secondary" onclick="register()" style="width:100%;">Registrieren</button>
+        </div>
     </div>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Deine Firebase Konfiguration
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeaGQDvvcVSr5MsGId2KYOsi2KBPQTnl8",
-      authDomain: "chat-dd3aa.firebaseapp.com",
-      databaseURL: "https://chat-dd3aa-default-rtdb.firebaseio.com",
-      projectId: "chat-dd3aa",
-      storageBucket: "chat-dd3aa.firebasestorage.app",
-      messagingSenderId: "460395397696",
-      appId: "1:460395397696:web:06092d1192b93c6a5e15a5"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeaGQDvvcVSr5MsGId2KYOsi2KBPQTnl8",
+            authDomain: "chat-dd3aa.firebaseapp.com",
+            databaseURL: "https://chat-dd3aa-default-rtdb.firebaseio.com",
+            projectId: "chat-dd3aa",
+            storageBucket: "chat-dd3aa.firebasestorage.app",
+            messagingSenderId: "460395397696",
+            appId: "1:460395397696:web:06092d1192b93c6a5e15a5"
+        };
 
-    // Firebase App Initialisierung
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const googleProvider = new GoogleAuthProvider();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
 
-    window.currentUser = null;
-    window.activeChatId = "hauptgruppe";
+        window.currentUser = null;
+        window.activeChatId = "hauptgruppe";
 
-    // Auth Status beobachten
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.currentUser = user;
-        document.getElementById('login-overlay').style.display = 'none';
-        loadMessages(window.activeChatId);
-      } else {
-        document.getElementById('login-overlay').style.display = 'flex';
-      }
-    });
-
-    // Google Login
-    window.loginWithGoogle = async () => {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (err) {
-        alert("Google-Login Fehler: " + err.message);
-      }
-    };
-
-    // Anmelden per E-Mail
-    window.login = async () => {
-      const email = document.getElementById('login-email').value;
-      const pass = document.getElementById('login-password').value;
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-      } catch (err) { alert("Login-Fehler: " + err.message); }
-    };
-
-    // Registrieren per E-Mail
-    window.register = async () => {
-      const email = document.getElementById('login-email').value;
-      const pass = document.getElementById('login-password').value;
-      try {
-        await createUserWithEmailAndPassword(auth, email, pass);
-      } catch (err) { alert("Registrierung: " + err.message); }
-    };
-
-    // Nachricht senden
-    window.sendMessage = async () => {
-      const input = document.getElementById('message-input');
-      const text = input.value.trim();
-      if (!text || !window.currentUser) return;
-
-      input.value = '';
-      await addDoc(collection(db, "chats", window.activeChatId, "messages"), {
-        text: text,
-        senderId: window.currentUser.uid,
-        senderEmail: window.currentUser.displayName || window.currentUser.email,
-        timestamp: serverTimestamp(),
-        type: "text"
-      });
-    };
-
-    // Nachrichten in Echtzeit laden
-    let unsubscribeMessages = null;
-    window.loadMessages = (chatId) => {
-      if (unsubscribeMessages) unsubscribeMessages();
-
-      const q = query(
-        collection(db, "chats", chatId, "messages"),
-        orderBy("timestamp", "asc")
-      );
-
-      unsubscribeMessages = onSnapshot(q, (snapshot) => {
-        const container = document.getElementById('messages-container');
-        container.innerHTML = '';
-
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const isMe = data.senderId === window.currentUser?.uid;
-          
-          const msgDiv = document.createElement('div');
-          msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-          
-          let content = `<div>${data.text}</div>`;
-          if (data.type === 'audio') {
-            content = `<audio controls src="${data.audioUrl}"></audio>`;
-          }
-
-          msgDiv.innerHTML = `
-            <div class="sender">${data.senderEmail ? data.senderEmail.split('@')[0] : 'User'}</div>
-            ${content}
-          `;
-          container.appendChild(msgDiv);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUser = user;
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('user-badge').innerText = user.displayName || user.email.split('@')[0];
+                loadMessages(window.activeChatId);
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('user-badge').innerText = "Nicht angemeldet";
+            }
         });
-        container.scrollTop = container.scrollHeight;
-      });
-    };
 
-    // Chat wechseln
-    window.selectChat = (chatId) => {
-      window.activeChatId = chatId;
-      document.getElementById('current-chat-title').innerText = chatId;
-      window.loadMessages(chatId);
-    };
+        window.loginWithGoogle = async () => {
+            try { await signInWithPopup(auth, googleProvider); } 
+            catch (err) { alert("Google-Login Fehler: " + err.message); }
+        };
 
-    // Voice Chat Dummy
-    window.startVoiceCall = () => {
-      alert("Voice Call Anruf wird gestartet...");
-    };
+        window.login = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch (err) { alert("Login-Fehler: " + err.message); }
+        };
 
-    // Sprachnachrichten Button Toggle
-    let isRecording = false;
-    window.toggleVoiceRecording = () => {
-      isRecording = !isRecording;
-      const micBtn = document.getElementById('mic-btn');
-      micBtn.style.background = isRecording ? '#ff4d4d' : '#202436';
-    };
-  </script>
+        window.register = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { await createUserWithEmailAndPassword(auth, email, pass); } 
+            catch (err) { alert("Registrierung: " + err.message); }
+        };
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !window.currentUser) return;
+
+            input.value = '';
+            await addDoc(collection(db, "chats", window.activeChatId, "messages"), {
+                text: text,
+                senderId: window.currentUser.uid,
+                senderName: window.currentUser.displayName || window.currentUser.email.split('@')[0],
+                timestamp: serverTimestamp()
+            });
+        };
+
+        let unsubscribeMessages = null;
+        window.loadMessages = (chatId) => {
+            if (unsubscribeMessages) unsubscribeMessages();
+
+            const q = query(
+                collection(db, "chats", chatId, "messages"),
+                orderBy("timestamp", "asc")
+            );
+
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isMe = data.senderId === window.currentUser?.uid;
+                    
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+
+                    msgDiv.innerHTML = `
+                        <div class="sender">${data.senderName || 'User'}</div>
+                        <div>${data.text}</div>
+                    `;
+                    container.appendChild(msgDiv);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        };
+
+        window.selectChat = (chatId) => {
+            window.activeChatId = chatId;
+            document.getElementById('current-chat-title').innerText = chatId === 'hauptgruppe' ? '🌐 Hauptgruppe' : chatId;
+            window.loadMessages(chatId);
+        };
+
+        window.startVoiceCall = () => { alert("Voice Call Anruf gestartet..."); };
+
+        let isRecording = false;
+        window.toggleVoiceRecording = () => {
+            isRecording = !isRecording;
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.style.background = isRecording ? 'var(--rose)' : '#f1f5f9';
+            micBtn.style.color = isRecording ? 'white' : 'var(--text-main)';
+        };
+    </script>
 </body>
 </html>
