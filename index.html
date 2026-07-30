@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -23,7 +24,7 @@
             --emerald: #10b981;
             --rose: #f43f5e;
             --border: #e6ebf1;
-            --shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
             --radius-lg: 20px;
             --radius-md: 12px;
             --radius-pill: 99px;
@@ -42,14 +43,39 @@
             height: 100dvh;
             overflow: hidden;
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             background-color: var(--bg-app);
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
         }
 
         body { display: flex; flex-direction: column; }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--text-main);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
 
         .app-header {
             background: var(--bg-surface);
@@ -66,6 +92,9 @@
 
         .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--brand); }
         .logo-dot { width: 10px; height: 10px; background: var(--brand); border-radius: 50%; }
+
+        .user-status-wrapper { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; background: var(--emerald); border-radius: 50%; }
 
         .session-badge {
             font-size: 12px;
@@ -128,12 +157,7 @@
         .panel-header-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
         .panel-header h3 { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .search-box {
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--border);
-            background: #ffffff;
-            flex-shrink: 0;
-        }
+        .search-box { padding: 8px 12px; border-bottom: 1px solid var(--border); background: #ffffff; flex-shrink: 0; }
 
         #chat-list { flex: 1; overflow-y: auto; padding: 8px; -webkit-overflow-scrolling: touch; }
 
@@ -148,25 +172,14 @@
             align-items: center;
             gap: 12px;
             user-select: none;
-            -webkit-user-select: none;
         }
-
         .chat-item:hover { background: #f8fafc; }
         .chat-item.active { background: var(--brand-light); }
 
         .chat-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e0e7ff;
-            color: var(--brand);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-            flex-shrink: 0;
-            object-fit: cover;
+            width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; color: var(--brand);
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+            flex-shrink: 0; object-fit: cover;
         }
 
         .chat-info { flex: 1; overflow: hidden; }
@@ -203,29 +216,61 @@
         .message .sender { font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--text-sub); }
         .message.sent .sender { color: rgba(255, 255, 255, 0.85); }
 
+        .reply-quote {
+            background: rgba(0,0,0,0.06);
+            border-left: 3px solid var(--brand);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: inherit;
+            opacity: 0.9;
+        }
+
         .message-img { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 6px; display: block; object-fit: cover; }
         .message audio { margin-top: 6px; max-width: 100%; border-radius: 20px; }
+
+        .message-reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .reaction-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 11px;
+            backdrop-filter: blur(4px);
+        }
+        .message.received .reaction-badge { background: #f1f5f9; }
 
         .message-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; margin-top: 4px; opacity: 0.75; }
         .message.sent .message-meta { color: white; }
 
-        #media-preview-container { padding: 8px 12px; background: #f1f5f9; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        #media-preview-container img { height: 44px; border-radius: 6px; object-fit: cover; }
+        #media-preview-container, #reply-preview-container {
+            padding: 8px 12px;
+            background: #f1f5f9;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
 
-        .recording-active { background: #fff1f2 !important; color: var(--rose) !important; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .recording-active { background: #fff1f2 !important; color: var(--rose) !important; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
         input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            font-size: 16px;
+            font-size: 14px;
             color: var(--text-main);
             background: #ffffff;
             transition: border-color 0.2s ease;
         }
-        @media (min-width: 769px) { input[type="text"], input[type="email"], input[type="password"] { font-size: 13px; } }
         input:focus { border-color: var(--brand); outline: none; }
 
         .btn { padding: 10px 16px; font-size: 13px; font-weight: 600; border-radius: var(--radius-pill); border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -245,13 +290,17 @@
 
         #input-area { padding: 10px 12px; background: var(--bg-surface); border-top: 1px solid var(--border); display: flex; gap: 6px; align-items: center; flex-shrink: 0; width: 100%; }
 
-        .context-menu { position: fixed; background: #ffffff; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: var(--radius-md); padding: 6px; z-index: 500; display: flex; flex-direction: column; gap: 4px; }
-        .context-menu button { background: transparent; border: none; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--rose); text-align: left; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
-        .context-menu button:hover { background: #fff1f2; }
+        .context-menu { position: fixed; background: #ffffff; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: var(--radius-md); padding: 6px; z-index: 500; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+        .context-menu button { background: transparent; border: none; padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--text-main); text-align: left; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+        .context-menu button:hover { background: #f1f5f9; }
+        .context-menu button.danger { color: var(--rose); }
+        .context-menu button.danger:hover { background: #fff1f2; }
 
-        .avatar-preview-box {
-            width: 80px; height: 80px; border-radius: 50%; background: #e0e7ff; color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; margin: 0 auto 12px auto; overflow: hidden; object-fit: cover; border: 2px solid var(--border);
-        }
+        .reaction-bar { display: flex; gap: 6px; padding: 4px 6px; border-bottom: 1px solid var(--border); justify-content: space-between; }
+        .reaction-bar span { cursor: pointer; font-size: 18px; transition: transform 0.1s; }
+        .reaction-bar span:hover { transform: scale(1.3); }
+
+        .avatar-preview-box { width: 80px; height: 80px; border-radius: 50%; background: #e0e7ff; color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; margin: 0 auto 12px auto; overflow: hidden; object-fit: cover; border: 2px solid var(--border); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
         .modal-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 12px; text-align: center; }
@@ -271,9 +320,14 @@
 </head>
 <body>
 
+    <div id="toast-container"></div>
+
     <div class="app-header">
         <div class="logo"><div class="logo-dot"></div> Messenger</div>
-        <div id="user-badge" class="session-badge" onclick="openProfileModal()">Profil verwalten</div>
+        <div class="user-status-wrapper">
+            <div class="status-dot" title="Online"></div>
+            <div id="user-badge" class="session-badge" onclick="openProfileModal()">Profil verwalten</div>
+        </div>
     </div>
 
     <div class="app-container" id="app-container">
@@ -314,6 +368,14 @@
 
             <div id="messages-container"></div>
 
+            <div id="reply-preview-container" class="hidden">
+                <div>
+                    <span style="font-weight:700; color:var(--brand);">Antwort an: </span>
+                    <span id="reply-preview-text" style="color:var(--text-sub);"></span>
+                </div>
+                <button class="btn-icon" onclick="cancelReply()"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            </div>
+
             <div id="media-preview-container" class="hidden">
                 <div style="display:flex; align-items:center; gap: 10px;" id="preview-content">
                     <img id="preview-img" class="hidden" src="" alt="Vorschau">
@@ -335,7 +397,7 @@
                     <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
                 </button>
 
-                <input type="text" id="message-input" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <input type="text" id="message-input" placeholder="Nachricht schreiben... (**fett**, *kursiv*)" onkeydown="if(event.key==='Enter') sendMessage()">
                 
                 <button class="btn-icon btn-send" onclick="sendMessage()" title="Senden">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -345,18 +407,32 @@
 
     </div>
 
+    <div id="app-dialog-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 id="dialog-title" style="font-size: 16px;">Hinweis</h3>
+            <p id="dialog-message" style="font-size:13px; color:var(--text-sub);"></p>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <button id="dialog-btn-cancel" class="btn btn-secondary hidden" style="flex:1;">Abbrechen</button>
+                <button id="dialog-btn-confirm" class="btn btn-primary" style="flex:1;">OK</button>
+            </div>
+        </div>
+    </div>
+
     <div id="msg-context-menu" class="context-menu hidden">
-        <button onclick="deleteSelectedMessage()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-            Nachricht löschen
-        </button>
+        <div class="reaction-bar">
+            <span onclick="addReaction('👍')">👍</span>
+            <span onclick="addReaction('❤️')">❤️</span>
+            <span onclick="addReaction('😂')">😂</span>
+            <span onclick="addReaction('😮')">😮</span>
+            <span onclick="addReaction('😢')">😢</span>
+        </div>
+        <button onclick="replyToSelectedMessage()">Antworten</button>
+        <button id="btn-edit-msg" onclick="editSelectedMessage()">Bearbeiten</button>
+        <button onclick="deleteSelectedMessage()" class="danger">Nachricht löschen</button>
     </div>
 
     <div id="chat-context-menu" class="context-menu hidden">
-        <button onclick="deleteSelectedChat()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-            Chat entfernen / verlassen
-        </button>
+        <button onclick="deleteSelectedChat()" class="danger">Chat verlassen / entfernen</button>
     </div>
 
     <div id="profile-modal" class="modal-overlay hidden">
@@ -443,11 +519,60 @@
         window.activeChatName = "Hauptgruppe";
         window.activeChatData = {};
         window.myChats = [];
+        
         window.pendingImageData = null;
         window.pendingAudioData = null;
-        window.pendingGroupLogo = null;
+        window.pendingReplyData = null;
+        window.editingMessageId = null;
+
         window.selectedMessageId = null;
+        window.selectedMessageData = null;
         window.selectedChatTargetId = null;
+
+        // Audio Recording Vars
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Eigene In-App Popup / Toast System
+        window.showToast = (msg) => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        window.showAppDialog = ({ title = "Hinweis", message = "", confirmText = "OK", cancelText = null, onConfirm = null }) => {
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            
+            const btnConfirm = document.getElementById('dialog-btn-confirm');
+            const btnCancel = document.getElementById('dialog-btn-cancel');
+
+            btnConfirm.innerText = confirmText;
+            btnConfirm.onclick = () => {
+                closeAppDialog();
+                if(onConfirm) onConfirm();
+            };
+
+            if(cancelText) {
+                btnCancel.innerText = cancelText;
+                btnCancel.classList.remove('hidden');
+                btnCancel.onclick = closeAppDialog;
+            } else {
+                btnCancel.classList.add('hidden');
+            }
+
+            document.getElementById('app-dialog-modal').classList.remove('hidden');
+        };
+
+        window.closeAppDialog = () => document.getElementById('app-dialog-modal').classList.add('hidden');
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -465,9 +590,9 @@
             }
         });
 
-        window.loginWithGoogle = async () => { try { await signInWithPopup(auth, googleProvider); } catch (err) { alert(err.message); } };
-        window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { alert(err.message); } };
-        window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { alert(err.message); } };
+        window.loginWithGoogle = async () => { try { await signInWithPopup(auth, googleProvider); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
+        window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
+        window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
         window.logoutUser = () => signOut(auth);
 
         // Profilverwaltung
@@ -484,19 +609,25 @@
             await updateProfile(window.currentUser, { displayName: newName });
             document.getElementById('user-badge').innerText = newName;
             closeProfileModal();
-            alert("Profil aktualisiert!");
+            showToast("Profil aktualisiert!");
         };
 
-        window.deleteUserProfile = async () => {
-            if(confirm("Möchtest du dein Profil und Konto wirklich unwiderruflich löschen?")) {
-                try {
-                    await deleteDoc(doc(db, "users", window.currentUser.uid));
-                    await deleteUser(window.currentUser);
-                    closeProfileModal();
-                } catch(err) {
-                    alert("Bitte melde dich erneut an, um deine Löschung zu bestätigen.");
+        window.deleteUserProfile = () => {
+            showAppDialog({
+                title: "Konto löschen",
+                message: "Möchtest du dein Profil und Konto wirklich unwiderruflich löschen?",
+                confirmText: "Löschen",
+                cancelText: "Abbrechen",
+                onConfirm: async () => {
+                    try {
+                        await deleteDoc(doc(db, "users", window.currentUser.uid));
+                        await deleteUser(window.currentUser);
+                        closeProfileModal();
+                    } catch(err) {
+                        showAppDialog({ title: "Sicherheits-Hinweis", message: "Bitte melde dich erneut an, um dein Konto zu löschen." });
+                    }
                 }
-            }
+            });
         };
 
         // Chatverwaltung
@@ -545,7 +676,6 @@
             window.activeChatId = chatId;
             window.activeChatName = chatName;
 
-            // Room Daten abrufen
             const roomSnap = await getDoc(doc(db, "rooms", chatId));
             window.activeChatData = roomSnap.exists() ? roomSnap.data() : {};
 
@@ -555,6 +685,15 @@
 
             loadMessages(chatId);
         };
+
+        // Formatting Helpers
+        function parseMarkdown(text) {
+            if(!text) return '';
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code style="background:rgba(0,0,0,0.1); padding:2px 4px; border-radius:4px;">$1</code>');
+        }
 
         let unsubscribeMessages = null;
         function loadMessages(chatId) {
@@ -574,24 +713,78 @@
                     msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
                     
                     let contentHtml = `<div class="sender">${data.senderName || 'User'}</div>`;
+                    
+                    if (data.replyTo) {
+                        contentHtml += `<div class="reply-quote"><strong>${data.replyTo.sender}:</strong> ${data.replyTo.text}</div>`;
+                    }
                     if (data.image) contentHtml += `<img src="${data.image}" class="message-img">`;
                     if (data.audio) contentHtml += `<audio src="${data.audio}" controls></audio>`;
-                    if (data.text) contentHtml += `<div>${data.text}</div>`;
-                    contentHtml += `<div class="message-meta">${timeString}</div>`;
+                    if (data.text) contentHtml += `<div>${parseMarkdown(data.text)}${data.edited ? ' <small style="opacity:0.6; font-size:10px;">(bearbeitet)</small>' : ''}</div>`;
+                    
+                    // Reaktionen anzeigen
+                    if (data.reactions && Object.keys(data.reactions).length > 0) {
+                        contentHtml += `<div class="message-reactions">`;
+                        for (const [emoji, count] of Object.entries(data.reactions)) {
+                            contentHtml += `<span class="reaction-badge">${emoji} ${count}</span>`;
+                        }
+                        contentHtml += `</div>`;
+                    }
+
+                    // Statushaken
+                    const statusCheck = isMe ? ' ✓✓' : '';
+                    contentHtml += `<div class="message-meta">${timeString}${statusCheck}</div>`;
 
                     msgDiv.innerHTML = contentHtml;
-                    msgDiv.oncontextmenu = (e) => { if(isMe) { e.preventDefault(); showMsgContextMenu(e.clientX, e.clientY, docSnap.id); } };
+                    msgDiv.oncontextmenu = (e) => { 
+                        e.preventDefault(); 
+                        showMsgContextMenu(e.clientX, e.clientY, docSnap.id, data, isMe); 
+                    };
                     container.appendChild(msgDiv);
                 });
                 container.scrollTop = container.scrollHeight;
             });
         }
 
+        // Nachrichten-Reaktionen & Bearbeiten
+        window.addReaction = async (emoji) => {
+            if (!window.selectedMessageId) return;
+            const msgRef = doc(db, "chats", window.activeChatId, "messages", window.selectedMessageId);
+            const reactions = window.selectedMessageData.reactions || {};
+            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            
+            await updateDoc(msgRef, { reactions });
+            hideAllContextMenus();
+        };
+
+        window.replyToSelectedMessage = () => {
+            window.pendingReplyData = {
+                id: window.selectedMessageId,
+                sender: window.selectedMessageData.senderName,
+                text: window.selectedMessageData.text || 'Medium'
+            };
+            document.getElementById('reply-preview-text').innerText = `${window.pendingReplyData.sender}: ${window.pendingReplyData.text}`;
+            document.getElementById('reply-preview-container').classList.remove('hidden');
+            hideAllContextMenus();
+        };
+
+        window.cancelReply = () => {
+            window.pendingReplyData = null;
+            document.getElementById('reply-preview-container').classList.add('hidden');
+        };
+
+        window.editSelectedMessage = () => {
+            if(!window.selectedMessageData.text) return showToast("Nur Textnachrichten können bearbeitet werden.");
+            window.editingMessageId = window.selectedMessageId;
+            const input = document.getElementById('message-input');
+            input.value = window.selectedMessageData.text;
+            input.focus();
+            hideAllContextMenus();
+        };
+
         // Gruppeneinstellungen Modal & Funktionen
         window.openGroupSettingsModal = () => {
             if (window.activeChatId === "hauptgruppe") {
-                alert("Die Hauptgruppe kann nicht bearbeitet werden.");
-                return;
+                return showAppDialog({ title: "Hinweis", message: "Die Hauptgruppe kann nicht bearbeitet werden." });
             }
 
             document.getElementById('group-name-input').value = window.activeChatName;
@@ -603,7 +796,6 @@
                 logoPreview.innerText = window.activeChatName.charAt(0).toUpperCase();
             }
 
-            // Admin Buttons anzeigen wenn Ersteller
             const isAdmin = window.activeChatData.owner === window.currentUser.uid;
             document.getElementById('group-admin-actions').classList.toggle('hidden', !isAdmin);
 
@@ -631,24 +823,29 @@
             const updateData = { name: newName };
             if (window.pendingGroupLogo) updateData.logo = window.pendingGroupLogo;
 
-            // Globalen Raum aktualisieren
             await updateDoc(doc(db, "rooms", window.activeChatId), updateData);
-
-            // Eigenen User-Eintrag anpassen
             await updateDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.activeChatId), updateData);
 
             window.activeChatName = newName;
             closeGroupSettingsModal();
             selectChat(window.activeChatId, newName);
+            showToast("Gruppeneinstellungen gespeichert!");
         };
 
-        window.deleteCurrentGroup = async () => {
-            if (confirm("Möchtest du diese Gruppe WIRKLICH für alle löschen?")) {
-                await deleteDoc(doc(db, "rooms", window.activeChatId));
-                await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.activeChatId));
-                closeGroupSettingsModal();
-                selectChat("hauptgruppe", "Hauptgruppe");
-            }
+        window.deleteCurrentGroup = () => {
+            showAppDialog({
+                title: "Gruppe löschen",
+                message: "Möchtest du diese Gruppe WIRKLICH für alle löschen?",
+                confirmText: "Löschen",
+                cancelText: "Abbrechen",
+                onConfirm: async () => {
+                    await deleteDoc(doc(db, "rooms", window.activeChatId));
+                    await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.activeChatId));
+                    closeGroupSettingsModal();
+                    selectChat("hauptgruppe", "Hauptgruppe");
+                    showToast("Gruppe gelöscht.");
+                }
+            });
         };
 
         // Private Gruppe erstellen
@@ -663,6 +860,7 @@
             document.getElementById('new-chat-name').value = '';
             closeCreateChatModal();
             selectChat(roomId, name);
+            showToast("Gruppe erstellt!");
         };
 
         async function joinRoomById(roomId) {
@@ -675,38 +873,97 @@
         }
 
         window.shareCurrentGroup = () => {
-            if (window.activeChatId === "hauptgruppe") return alert("Hauptgruppe ist für alle sichtbar.");
+            if (window.activeChatId === "hauptgruppe") return showAppDialog({ title: "Hinweis", message: "Die Hauptgruppe ist für alle öffentlich." });
             const shareUrl = `${window.location.origin}${window.location.pathname}?room=${window.activeChatId}`;
             navigator.clipboard.writeText(shareUrl);
-            alert("Einladungs-Link kopiert!");
+            showToast("Einladungs-Link kopiert!");
         };
 
         window.sendMessage = async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
+
+            if (window.editingMessageId) {
+                if (text) {
+                    await updateDoc(doc(db, "chats", window.activeChatId, "messages", window.editingMessageId), {
+                        text: text,
+                        edited: true
+                    });
+                    showToast("Nachricht bearbeitet.");
+                }
+                window.editingMessageId = null;
+                input.value = '';
+                return;
+            }
+
             if ((!text && !window.pendingImageData && !window.pendingAudioData) || !window.currentUser) return;
 
             input.value = '';
             const img = window.pendingImageData;
             const audio = window.pendingAudioData;
+            const reply = window.pendingReplyData;
+
             cancelMediaPreview();
+            cancelReply();
 
             await addDoc(collection(db, "chats", window.activeChatId, "messages"), {
                 text: text || '',
                 image: img || null,
                 audio: audio || null,
+                replyTo: reply || null,
                 senderId: window.currentUser.uid,
                 senderName: window.currentUser.displayName || window.currentUser.email.split('@')[0],
                 timestamp: serverTimestamp()
             });
         };
 
+        // Sprachaufnahmen (MediaRecorder API)
+        window.toggleVoiceRecording = async () => {
+            const micBtn = document.getElementById('mic-btn');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            window.pendingAudioData = reader.result;
+                            document.getElementById('preview-audio').src = window.pendingAudioData;
+                            document.getElementById('preview-audio').classList.remove('hidden');
+                            document.getElementById('preview-img').classList.add('hidden');
+                            document.getElementById('media-preview-container').classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording-active');
+                } catch (err) {
+                    showAppDialog({ title: "Mikrofon-Fehler", message: "Zugriff auf das Mikrofon verweigert oder nicht unterstützt." });
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording-active');
+            }
+        };
+
         // Context Menus
-        function showMsgContextMenu(x, y, msgId) {
+        function showMsgContextMenu(x, y, msgId, data, isMe) {
             hideAllContextMenus();
             window.selectedMessageId = msgId;
+            window.selectedMessageData = data;
+            
             const menu = document.getElementById('msg-context-menu');
-            menu.style.left = `${Math.min(x, window.innerWidth - 170)}px`;
+            document.getElementById('btn-edit-msg').style.display = isMe ? 'block' : 'none';
+
+            menu.style.left = `${Math.min(x, window.innerWidth - 180)}px`;
             menu.style.top = `${y}px`;
             menu.classList.remove('hidden');
         }
@@ -725,16 +982,36 @@
             document.getElementById('chat-context-menu').classList.add('hidden');
         };
 
-        window.deleteSelectedMessage = async () => {
-            if (window.selectedMessageId) await deleteDoc(doc(db, "chats", window.activeChatId, "messages", window.selectedMessageId));
-            hideAllContextMenus();
+        window.deleteSelectedMessage = () => {
+            showAppDialog({
+                title: "Nachricht löschen",
+                message: "Möchtest du diese Nachricht wirklich löschen?",
+                confirmText: "Löschen",
+                cancelText: "Abbrechen",
+                onConfirm: async () => {
+                    if (window.selectedMessageId) await deleteDoc(doc(db, "chats", window.activeChatId, "messages", window.selectedMessageId));
+                    hideAllContextMenus();
+                    showToast("Nachricht gelöscht.");
+                }
+            });
         };
 
-        window.deleteSelectedChat = async () => {
-            if (window.selectedChatTargetId === "hauptgruppe") return alert("Hauptgruppe kann nicht gelöscht werden.");
-            await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.selectedChatTargetId));
-            selectChat("hauptgruppe", "Hauptgruppe");
-            hideAllContextMenus();
+        window.deleteSelectedChat = () => {
+            if (window.selectedChatTargetId === "hauptgruppe") {
+                return showAppDialog({ title: "Hinweis", message: "Die Hauptgruppe kann nicht gelöscht werden." });
+            }
+            showAppDialog({
+                title: "Chat verlassen",
+                message: "Möchtest du diesen Chat aus deiner Liste entfernen?",
+                confirmText: "Entfernen",
+                cancelText: "Abbrechen",
+                onConfirm: async () => {
+                    await deleteDoc(doc(db, "users", window.currentUser.uid, "joinedRooms", window.selectedChatTargetId));
+                    selectChat("hauptgruppe", "Hauptgruppe");
+                    hideAllContextMenus();
+                    showToast("Chat entfernt.");
+                }
+            });
         };
 
         // Medien
@@ -747,6 +1024,7 @@
                     window.pendingImageData = event.target.result;
                     document.getElementById('preview-img').src = window.pendingImageData;
                     document.getElementById('preview-img').classList.remove('hidden');
+                    document.getElementById('preview-audio').classList.add('hidden');
                     document.getElementById('media-preview-container').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
