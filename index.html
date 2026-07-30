@@ -62,7 +62,7 @@
             border-radius: var(--radius-pill);
         }
 
-        /* App Layout (WhatsApp Style Grid) */
+        /* App Layout */
         .app-container {
             flex: 1;
             display: flex;
@@ -72,6 +72,7 @@
             padding: 16px;
             gap: 16px;
             height: calc(100vh - 60px);
+            position: relative;
         }
 
         .glass-panel {
@@ -88,6 +89,7 @@
         #sidebar {
             width: 360px;
             flex-shrink: 0;
+            transition: transform 0.3s ease;
         }
 
         .panel-header {
@@ -98,6 +100,12 @@
             align-items: center;
             background: #fafbfc;
             height: 64px;
+        }
+
+        .panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .panel-header h3 { font-size: 15px; font-weight: 700; }
@@ -146,11 +154,13 @@
         .chat-info { flex: 1; overflow: hidden; }
         .chat-info-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
         .chat-info strong { font-size: 14px; color: var(--text-main); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-time { font-size: 11px; color: var(--text-sub); }
         .chat-preview { font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
         /* Nachrichten-Bereich */
-        #main-chat { flex: 1; }
+        #main-chat { 
+            flex: 1; 
+            transition: transform 0.3s ease;
+        }
 
         #messages-container {
             flex: 1;
@@ -264,6 +274,8 @@
         .btn-icon:hover { background: #f1f5f9; color: var(--text-main); }
         .btn-icon svg { width: 18px; height: 18px; fill: currentColor; }
 
+        #back-btn { display: none; } /* Standardmäßig ausgeblendet (Desktop) */
+
         #input-area {
             padding: 14px 20px;
             background: var(--bg-surface);
@@ -302,10 +314,32 @@
 
         .hidden { display: none !important; }
 
-        @media (max-width: 850px) {
-            .app-container { flex-direction: column; height: calc(100vh - 60px); }
-            #sidebar { width: 100%; height: 40%; }
-            #main-chat { height: 60%; }
+        /* WhatsApp Mobile Layout Logic */
+        @media (max-width: 768px) {
+            .app-container { padding: 0; gap: 0; height: calc(100vh - 60px); }
+            .glass-panel { border-radius: 0; border: none; }
+            
+            #sidebar {
+                width: 100%;
+                height: 100%;
+            }
+
+            #main-chat {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 10;
+                transform: translateX(100%); /* Versteckt den Chat nach rechts */
+            }
+
+            /* Klasse wenn ein Chat geöffnet ist auf Mobile */
+            .mobile-chat-active #main-chat {
+                transform: translateX(0); /* Schiebt den Chat ins Bild */
+            }
+
+            #back-btn { display: flex; } /* Zeigt den Zurück-Button auf Mobile */
         }
     </style>
 </head>
@@ -316,7 +350,7 @@
         <div id="user-badge" class="session-badge">Nicht angemeldet</div>
     </div>
 
-    <div class="app-container">
+    <div class="app-container" id="app-container">
 
         <div id="sidebar" class="glass-panel">
             <div class="panel-header">
@@ -336,7 +370,13 @@
 
         <div id="main-chat" class="glass-panel">
             <div class="panel-header">
-                <h3 id="current-chat-title">Aktiver Chat</h3>
+                <div class="panel-header-left">
+                    <button class="btn-icon" id="back-btn" onclick="closeMobileChat()" title="Zurück zu den Chats">
+                        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    </button>
+                    <h3 id="current-chat-title">Aktiver Chat</h3>
+                </div>
+                
                 <div style="display: flex; gap: 4px;">
                     <button class="btn-icon" onclick="startVoiceCall()" title="Anrufen">
                         <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
@@ -422,21 +462,20 @@
         window.activeChatId = "hauptgruppe";
         window.allChats = [];
 
-        // Authentication State Listener
+        // Auth Listener
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 window.currentUser = user;
                 document.getElementById('login-overlay').classList.add('hidden');
                 document.getElementById('user-badge').innerText = user.displayName || user.email.split('@')[0];
                 loadChatList();
-                selectChat(window.activeChatId, "Hauptgruppe");
             } else {
                 document.getElementById('login-overlay').classList.remove('hidden');
                 document.getElementById('user-badge').innerText = "Nicht angemeldet";
             }
         });
 
-        // Auth Funktionen
+        // Auth Aktionen
         window.loginWithGoogle = async () => {
             try { await signInWithPopup(auth, googleProvider); } 
             catch (err) { alert("Google-Login Fehler: " + err.message); }
@@ -489,25 +528,28 @@
                         <div class="chat-info-header">
                             <strong>${chat.name}</strong>
                         </div>
-                        <span class="chat-preview">Klicken zum Chatten</span>
+                        <span class="chat-preview">Klicken zum Öffnen</span>
                     </div>
                 `;
                 list.appendChild(item);
             });
         }
 
-        // Chat-Suche
+        // Suche
         window.filterChats = () => {
             const queryVal = document.getElementById('search-input').value.toLowerCase();
             const filtered = window.allChats.filter(chat => chat.name.toLowerCase().includes(queryVal));
             renderChatList(filtered);
         };
 
-        // Nachrichten laden
+        // Chat auswählen
         let unsubscribeMessages = null;
         window.selectChat = (chatId, chatName) => {
             window.activeChatId = chatId;
             document.getElementById('current-chat-title').innerText = chatName || chatId;
+
+            // Mobile-Ansicht öffnen (Schiebt den Chat ins Bild)
+            document.getElementById('app-container').classList.add('mobile-chat-active');
 
             renderChatList(window.allChats);
 
@@ -542,7 +584,12 @@
             });
         };
 
-        // Nachricht Senden
+        // Auf Mobile zurück zur Übersicht gehen
+        window.closeMobileChat = () => {
+            document.getElementById('app-container').classList.remove('mobile-chat-active');
+        };
+
+        // Nachricht senden
         window.sendMessage = async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -557,7 +604,7 @@
             });
         };
 
-        // Modals & Raum Erstellung
+        // Modals & Chat-Erstellung
         window.openCreateChatModal = () => document.getElementById('create-modal').classList.remove('hidden');
         window.closeCreateChatModal = () => document.getElementById('create-modal').classList.add('hidden');
 
@@ -574,7 +621,7 @@
             selectChat(roomId, name);
         };
 
-        // Sprachaufnahme / Anrufe / Uploads UI Stubs
+        // Stubs
         window.startVoiceCall = () => alert("Anruf gestartet...");
 
         let isRecording = false;
