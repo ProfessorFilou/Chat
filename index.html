@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -93,24 +92,56 @@
         .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--brand); }
         .logo-dot { width: 10px; height: 10px; background: var(--brand); border-radius: 50%; }
 
-        .user-status-wrapper { display: flex; align-items: center; gap: 8px; }
-        .status-dot { width: 8px; height: 8px; background: var(--emerald); border-radius: 50%; }
-
-        .session-badge {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-sub);
-            background: #f1f5f9;
-            padding: 6px 12px;
+        .user-header-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 4px 8px;
             border-radius: var(--radius-pill);
-            max-width: 160px;
+            transition: background 0.2s;
+        }
+        .user-header-profile:hover { background: #f1f5f9; }
+
+        .header-avatar-container {
+            position: relative;
+            width: 36px;
+            height: 36px;
+        }
+        .header-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--brand-light);
+            color: var(--brand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            border: 1px solid var(--border);
+        }
+        .status-dot-badge {
+            width: 10px;
+            height: 10px;
+            background: var(--emerald);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border: 2px solid var(--bg-surface);
+        }
+
+        .header-username {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            max-width: 120px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            cursor: pointer;
-            transition: background 0.2s;
         }
-        .session-badge:hover { background: var(--brand-light); color: var(--brand); }
 
         .app-container {
             flex: 1;
@@ -179,7 +210,7 @@
         .chat-avatar {
             width: 40px; height: 40px; border-radius: 50%; background: #e0e7ff; color: var(--brand);
             display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
-            flex-shrink: 0; object-fit: cover;
+            flex-shrink: 0; object-fit: cover; border: 1px solid var(--border);
         }
 
         .chat-info { flex: 1; overflow: hidden; }
@@ -194,11 +225,12 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             background: #fbfcfd;
             -webkit-overflow-scrolling: touch;
         }
 
+        /* Message Layout mit Profilbild */
         .message {
             max-width: 75%;
             padding: 10px 14px;
@@ -209,11 +241,41 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             position: relative;
             user-select: none;
+            display: flex;
+            gap: 10px;
         }
 
         .message.received { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 2px; }
         .message.sent { background: var(--brand); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .message .sender { font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--text-sub); }
+
+        .message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #cbd5e1;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+        }
+
+        .message.sent .message-avatar {
+            background: rgba(255,255,255,0.25);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .message-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message .sender { font-size: 11px; font-weight: 700; margin-bottom: 2px; color: var(--text-sub); }
         .message.sent .sender { color: rgba(255, 255, 255, 0.85); }
 
         .reply-quote {
@@ -315,6 +377,7 @@
             #main-chat { position: absolute; top: 0; left: 0; width: 100vw; height: 100%; z-index: 10; transform: translateX(100vw); visibility: hidden; }
             .mobile-chat-active #main-chat { transform: translateX(0); visibility: visible; }
             #back-btn { display: flex; }
+            .header-username { display: none; }
         }
     </style>
 </head>
@@ -324,9 +387,13 @@
 
     <div class="app-header">
         <div class="logo"><div class="logo-dot"></div> Messenger</div>
-        <div class="user-status-wrapper">
-            <div class="status-dot" title="Online"></div>
-            <div id="user-badge" class="session-badge" onclick="openProfileModal()">Profil verwalten</div>
+        
+        <div class="user-header-profile" onclick="openProfileModal()">
+            <div class="header-avatar-container">
+                <div id="user-header-avatar" class="header-avatar">U</div>
+                <div class="status-dot-badge"></div>
+            </div>
+            <span id="user-header-name" class="header-username">Benutzer</span>
         </div>
     </div>
 
@@ -438,7 +505,10 @@
     <div id="profile-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3 style="font-size: 16px;">Profil Einstellungen</h3>
-            <p style="font-size:12px; color:var(--text-sub);">Ändere deinen Namen oder verwalte deinen Account.</p>
+
+            <div id="profile-avatar-preview" class="avatar-preview-box">U</div>
+            <button class="btn btn-secondary" onclick="document.getElementById('user-avatar-upload').click()" style="width:100%;">Profilbild ändern</button>
+            <input type="file" id="user-avatar-upload" class="hidden" accept="image/*" onchange="handleUserAvatarUpload(event)">
 
             <input type="text" id="profile-name-input" placeholder="Dein Name">
             
@@ -523,18 +593,17 @@
         window.pendingImageData = null;
         window.pendingAudioData = null;
         window.pendingReplyData = null;
+        window.pendingUserAvatar = null;
         window.editingMessageId = null;
 
         window.selectedMessageId = null;
         window.selectedMessageData = null;
         window.selectedChatTargetId = null;
 
-        // Audio Recording Vars
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
 
-        // Eigene In-App Popup / Toast System
         window.showToast = (msg) => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -578,7 +647,7 @@
             if (user) {
                 window.currentUser = user;
                 document.getElementById('login-overlay').classList.add('hidden');
-                document.getElementById('user-badge').innerText = user.displayName || user.email.split('@')[0];
+                updateHeaderProfileUI();
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 const joinRoom = urlParams.get('room');
@@ -590,6 +659,21 @@
             }
         });
 
+        function updateHeaderProfileUI() {
+            if(!window.currentUser) return;
+            const name = window.currentUser.displayName || window.currentUser.email.split('@')[0];
+            const photo = window.currentUser.photoURL;
+
+            document.getElementById('user-header-name').innerText = name;
+            const avatarElem = document.getElementById('user-header-avatar');
+
+            if(photo) {
+                avatarElem.innerHTML = `<img src="${photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            } else {
+                avatarElem.innerText = name.charAt(0).toUpperCase();
+            }
+        }
+
         window.loginWithGoogle = async () => { try { await signInWithPopup(auth, googleProvider); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
         window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
         window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Fehler", message: err.message }); } };
@@ -598,16 +682,43 @@
         // Profilverwaltung
         window.openProfileModal = () => {
             if(!window.currentUser) return;
-            document.getElementById('profile-name-input').value = window.currentUser.displayName || '';
+            const name = window.currentUser.displayName || '';
+            document.getElementById('profile-name-input').value = name;
+            
+            const prevBox = document.getElementById('profile-avatar-preview');
+            if(window.currentUser.photoURL) {
+                prevBox.innerHTML = `<img src="${window.currentUser.photoURL}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                prevBox.innerText = (name || 'U').charAt(0).toUpperCase();
+            }
+
             document.getElementById('profile-modal').classList.remove('hidden');
         };
         window.closeProfileModal = () => document.getElementById('profile-modal').classList.add('hidden');
 
+        window.handleUserAvatarUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.pendingUserAvatar = event.target.result;
+                    document.getElementById('profile-avatar-preview').innerHTML = `<img src="${window.pendingUserAvatar}" style="width:100%; height:100%; object-fit:cover;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
         window.saveUserProfile = async () => {
             const newName = document.getElementById('profile-name-input').value.trim();
             if(!newName) return;
-            await updateProfile(window.currentUser, { displayName: newName });
-            document.getElementById('user-badge').innerText = newName;
+            
+            const profileData = { displayName: newName };
+            if(window.pendingUserAvatar) {
+                profileData.photoURL = window.pendingUserAvatar;
+            }
+
+            await updateProfile(window.currentUser, profileData);
+            updateHeaderProfileUI();
             closeProfileModal();
             showToast("Profil aktualisiert!");
         };
@@ -686,7 +797,6 @@
             loadMessages(chatId);
         };
 
-        // Formatting Helpers
         function parseMarkdown(text) {
             if(!text) return '';
             return text
@@ -712,8 +822,18 @@
                     const msgDiv = document.createElement('div');
                     msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
                     
-                    let contentHtml = `<div class="sender">${data.senderName || 'User'}</div>`;
-                    
+                    // Rundes Profilbild für Absender oben links in der Nachricht
+                    let avatarHtml = `<div class="message-avatar">${(data.senderName || 'U').charAt(0).toUpperCase()}</div>`;
+                    if (data.senderAvatar) {
+                        avatarHtml = `<img src="${data.senderAvatar}" class="message-avatar" alt="A">`;
+                    }
+
+                    let contentHtml = `
+                        ${avatarHtml}
+                        <div class="message-body">
+                            <div class="sender">${data.senderName || 'User'}</div>
+                    `;
+
                     if (data.replyTo) {
                         contentHtml += `<div class="reply-quote"><strong>${data.replyTo.sender}:</strong> ${data.replyTo.text}</div>`;
                     }
@@ -721,7 +841,6 @@
                     if (data.audio) contentHtml += `<audio src="${data.audio}" controls></audio>`;
                     if (data.text) contentHtml += `<div>${parseMarkdown(data.text)}${data.edited ? ' <small style="opacity:0.6; font-size:10px;">(bearbeitet)</small>' : ''}</div>`;
                     
-                    // Reaktionen anzeigen
                     if (data.reactions && Object.keys(data.reactions).length > 0) {
                         contentHtml += `<div class="message-reactions">`;
                         for (const [emoji, count] of Object.entries(data.reactions)) {
@@ -730,9 +849,8 @@
                         contentHtml += `</div>`;
                     }
 
-                    // Statushaken
                     const statusCheck = isMe ? ' ✓✓' : '';
-                    contentHtml += `<div class="message-meta">${timeString}${statusCheck}</div>`;
+                    contentHtml += `<div class="message-meta">${timeString}${statusCheck}</div></div>`;
 
                     msgDiv.innerHTML = contentHtml;
                     msgDiv.oncontextmenu = (e) => { 
@@ -745,7 +863,6 @@
             });
         }
 
-        // Nachrichten-Reaktionen & Bearbeiten
         window.addReaction = async (emoji) => {
             if (!window.selectedMessageId) return;
             const msgRef = doc(db, "chats", window.activeChatId, "messages", window.selectedMessageId);
@@ -781,7 +898,6 @@
             hideAllContextMenus();
         };
 
-        // Gruppeneinstellungen Modal & Funktionen
         window.openGroupSettingsModal = () => {
             if (window.activeChatId === "hauptgruppe") {
                 return showAppDialog({ title: "Hinweis", message: "Die Hauptgruppe kann nicht bearbeitet werden." });
@@ -848,7 +964,6 @@
             });
         };
 
-        // Private Gruppe erstellen
         window.createNewPrivateChat = async () => {
             const name = document.getElementById('new-chat-name').value.trim();
             if (!name) return;
@@ -913,11 +1028,11 @@
                 replyTo: reply || null,
                 senderId: window.currentUser.uid,
                 senderName: window.currentUser.displayName || window.currentUser.email.split('@')[0],
+                senderAvatar: window.currentUser.photoURL || null,
                 timestamp: serverTimestamp()
             });
         };
 
-        // Sprachaufnahmen (MediaRecorder API)
         window.toggleVoiceRecording = async () => {
             const micBtn = document.getElementById('mic-btn');
 
@@ -954,7 +1069,6 @@
             }
         };
 
-        // Context Menus
         function showMsgContextMenu(x, y, msgId, data, isMe) {
             hideAllContextMenus();
             window.selectedMessageId = msgId;
@@ -1014,7 +1128,6 @@
             });
         };
 
-        // Medien
         window.triggerFileUpload = () => document.getElementById('file-upload').click();
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
