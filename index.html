@@ -606,8 +606,8 @@
                 const gain = ctx.createGain();
                 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
                 
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
@@ -620,7 +620,6 @@
             } catch(e){}
         }
 
-        // Browser Push Benachrichtigung anfordern
         if ("Notification" in window && Notification.permission === "default") {
             Notification.requestPermission();
         }
@@ -702,19 +701,54 @@
             }
         }
 
-        // Login & Google Auth mit Fehler-Handling
+        // Login mit präziser Fehlerdiagnose
         window.loginWithGoogle = async () => { 
             try { 
                 await signInWithPopup(auth, googleProvider); 
             } catch (err) { 
-                showAppDialog({ title: "Google Fehler", message: err.message }); 
+                let errorMsg = err.message;
+                if (err.code === 'auth/popup-blocked') {
+                    errorMsg = "Das Google-Anmeldefenster wurde vom Browser blockiert. Bitte Popups in den Browser-Einstellungen erlauben.";
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    errorMsg = "Diese Domain ist in der Firebase Console noch nicht freigeschaltet. Bitte unter Auth -> Settings -> Authorized Domains eintragen.";
+                }
+                showAppDialog({ title: "Google Anmeldefehler", message: errorMsg }); 
             } 
         };
-        window.login = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Anmeldefehler", message: err.message }); } };
-        window.register = async () => { try { await createUserWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } catch (err) { showAppDialog({ title: "Registrierungsfehler", message: err.message }); } };
+
+        window.login = async () => { 
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            if(!email || !password) {
+                return showAppDialog({ title: "Hinweis", message: "Bitte E-Mail und Passwort eingeben." });
+            }
+
+            try { 
+                await signInWithEmailAndPassword(auth, email, password); 
+            } catch (err) { 
+                showAppDialog({ title: "Anmeldefehler", message: "Fehler beim Anmelden: " + err.message }); 
+            } 
+        };
+
+        window.register = async () => { 
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            if(!email || !password) {
+                return showAppDialog({ title: "Hinweis", message: "Bitte E-Mail und Passwort eingeben." });
+            }
+
+            try { 
+                await createUserWithEmailAndPassword(auth, email, password); 
+            } catch (err) { 
+                showAppDialog({ title: "Registrierungsfehler", message: err.message }); 
+            } 
+        };
+
         window.logoutUser = () => signOut(auth);
 
-        // Profilverwaltung & Komprimierung des Avatar-Bildes auf max. 80x80 (für kleine Base64 Daten)
+        // Profilverwaltung & Komprimierung des Avatar-Bildes auf 80x80 Pixel
         window.openProfileModal = () => {
             if(!window.currentUser) return;
             const name = window.currentUser.displayName || '';
@@ -769,7 +803,6 @@
 
                 await updateProfile(window.currentUser, profileData);
                 
-                // Zusätzliches Speichern im Users Firestore Document
                 await setDoc(doc(db, "users", window.currentUser.uid), {
                     displayName: newName,
                     photoURL: window.pendingUserAvatar || window.currentUser.photoURL || null
@@ -1108,7 +1141,6 @@
             const input = document.getElementById('message-input');
             const text = input.value.trim();
 
-            // Typing Indicator entfernen beim Senden
             if (window.currentUser) {
                 deleteDoc(doc(db, "chats", window.activeChatId, "typing", window.currentUser.uid));
             }
@@ -1244,16 +1276,45 @@
         };
 
         window.triggerFileUpload = () => document.getElementById('file-upload').click();
+
+        // Automatische Komprimierung aller hochgeladenen Chat-Bilder
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    window.pendingImageData = event.target.result;
-                    document.getElementById('preview-img').src = window.pendingImageData;
-                    document.getElementById('preview-img').classList.remove('hidden');
-                    document.getElementById('preview-audio').classList.add('hidden');
-                    document.getElementById('media-preview-container').classList.remove('hidden');
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        window.pendingImageData = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('preview-img').src = window.pendingImageData;
+                        document.getElementById('preview-img').classList.remove('hidden');
+                        document.getElementById('preview-audio').classList.add('hidden');
+                        document.getElementById('media-preview-container').classList.remove('hidden');
+                    };
+                    img.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             }
